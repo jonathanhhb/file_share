@@ -198,12 +198,10 @@ def listChannelsAndIPs(channelKeys):
         print(f"\t{channel}")
 
     # Each channel _should_ have the same set of IPs, but we'll check them all
-    kvplists = [key.split(":",1)[1] for key in channelKeys]                         # Get list (as string) of IP:value pairs from channelKeys (see format above)
-    kvptuples = [kvplist.split(",") for kvplist in kvplists]                        # Convert string to actual list by splitting on ","
-    iptuples = [map(lambda t: t.split(":")[0], toople) for toople in kvptuples]     # Convert each IP:value entry to just IP
-    properties = sorted(reduce(lambda s, e: s.union(e), iptuples, set()))           # Add all IPs to an initially empty set
-
-    # properties = reduce(lambda s, e: s.union(e), [map(lambda e: e.split(":")[0], key.split(":",1)[1].split(",")) for key in channelKeys], set())
+    csvkvps = [key.split(":",1)[1] for key in channelKeys]              # For each channel get a comma separated list of IP:value pairs (see format above)
+    kvps = [csv.split(",") for csv in csvkvps]                          # For each CSV convert to actual list by splitting on ","
+    ips = [map(lambda t: t.split(":")[0], kvp) for kvp in kvps]         # Convert each IP:value entry to just IP
+    properties = sorted(reduce(lambda s, e: s.union(e), ips, set()))    # Add all IPs to an initially empty set
 
     print("\nIPs:")
     for property in properties:
