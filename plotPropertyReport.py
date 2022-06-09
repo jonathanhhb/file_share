@@ -1,4 +1,5 @@
 import argparse
+from functools import reduce
 import json
 import matplotlib.pyplot as plt
 import numpy as np
@@ -170,6 +171,10 @@ def main(args):
         print("Channels:Pools-")
         print(json.dumps(poolKeys, indent=4))
 
+    if args.list:
+        listChannelsAndIPs(poolData)
+        return
+
     (traceValues, normValues) = accumulateTraceData(args, poolData, poolKeys)
     plotTraces(args, traceValues, normValues)
 
@@ -182,6 +187,31 @@ def readJsonFile(filename):
         jsonData = json.load(file)
 
     return jsonData
+
+
+def listChannelsAndIPs(channelKeys):
+
+    channels = sorted(set([key.split(":",1)[0] for key in channelKeys]))    # keys look like "CHANNEL:IP:value,...,IP:value"
+
+    print("\nChannels:")
+    for channel in channels:
+        print(f"\t{channel}")
+
+    # Each channel _should_ have the same set of IPs, but we'll check them all
+    kvplists = [key.split(":",1)[1] for key in channelKeys]                         # Get list (as string) of IP:value pairs from channelKeys (see format above)
+    kvptuples = [kvplist.split(",") for kvplist in kvplists]                        # Convert string to actual list by splitting on ","
+    iptuples = [map(lambda t: t.split(":")[0], toople) for toople in kvptuples]     # Convert each IP:value entry to just IP
+    properties = sorted(reduce(lambda s, e: s.union(e), iptuples, set()))           # Add all IPs to an initially empty set
+
+    # properties = reduce(lambda s, e: s.union(e), [map(lambda e: e.split(":")[0], key.split(":",1)[1].split(",")) for key in channelKeys], set())
+
+    print("\nIPs:")
+    for property in properties:
+        print(f"\t{property}")
+
+    print()
+
+    return
 
 
 def processCommandline():
@@ -197,20 +227,22 @@ def processCommandline():
     parser.add_argument('-m', '--matrix', help='plot matrix for all properties', action='store_true')
     parser.add_argument('-v', '--verbose', action="store_true")
     parser.add_argument('--no-legend', action="store_false", dest="legend")     # Note args.legend default to True, passing --no-legend sets args.legend to False
+    parser.add_argument('-l', '--list', action="store_true", help="List channels and IP keys found in the report. No plotting is performed with this option.")
 
     args = parser.parse_args()
 
     if not args.channels:
         args.channels = ['Infected']
 
-    print(f"Filename:              '{args.filename}'")
-    print(f"Channel(s):            {args.channels}")
-    print(f"Primary:               {args.primary}")
-    print(f"Normalize:             {args.normalize}")
-    print(f"Normalization Channel: '{args.by}'") if args.normalize else None
-    print(f"Overlay:               {args.overlay}")
-    print(f"Save:                  {args.saveFigure}")
-    print(f"Matrix:                {args.matrix}")
+    if not args.list:
+        print(f"Filename:              '{args.filename}'")
+        print(f"Channel(s):            {args.channels}")
+        print(f"Primary:               {args.primary}")
+        print(f"Normalize:             {args.normalize}")
+        print(f"Normalization Channel: '{args.by}'") if args.normalize else None
+        print(f"Overlay:               {args.overlay}")
+        print(f"Save:                  {args.saveFigure}")
+        print(f"Matrix:                {args.matrix}")
 
     return args
 
